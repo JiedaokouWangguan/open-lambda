@@ -8,7 +8,7 @@
 	"cluster_name": "/home/ubuntu/open-lambda/my-cluster",
 	"pip_mirror": "",
 	"Pkgs_dir": "/home/ubuntu/open-lambda/my-cluster/packages",
-	"max_runners": 10,
+	"max_runners": 100,
 	"handler_cache_size": 1000000,
 	"import_cache_size": 0,
 	"worker_dir": "/home/ubuntu/open-lambda/my-cluster/workers/worker-0",
