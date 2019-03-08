@@ -284,7 +284,8 @@ func (h *Handler) RunStart() (ch *sb.Channel, err error) {
 	// create sandbox if needed
 	if h.sandbox == nil {
 		hit := false
-
+		log.Printf("Creat sb for lambda: %s, time is \n", h.name)
+		log.Printf(time.Now().Format(time.RFC3339))
 		// TODO: do this in the background
 		err = hms.pipMgr.Install(hm.installs)
 		if err != nil {
