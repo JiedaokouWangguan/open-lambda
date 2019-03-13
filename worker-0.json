@@ -1,6 +1,6 @@
 {
 	"registry": "local",
-	"sandbox": "docker",
+	"sandbox": "sock",
 	"registry_dir": "/home/ubuntu/open-lambda/my-cluster/registry",
 	"registry_server": "",
 	"registry_access_key": "",
@@ -9,7 +9,7 @@
 	"pip_mirror": "",
 	"Pkgs_dir": "/home/ubuntu/open-lambda/my-cluster/packages",
 	"max_runners": 100,
-	"handler_cache_size": 1000000,
+	"handler_cache_size": 100000,
 	"import_cache_size": 0,
 	"worker_dir": "/home/ubuntu/open-lambda/my-cluster/workers/worker-0",
 	"SOCK_base_path": "/home/ubuntu/open-lambda/my-cluster/base",
