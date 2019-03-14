@@ -38,6 +38,9 @@ type HandlerManagerSet struct {
 	hhits      *int64
 	ihits      *int64
 	misses     *int64
+	MemPercent *float64
+	LenQueue   *int64
+	cond       *sync.Cond
 }
 
 type HandlerManager struct {
@@ -105,6 +108,8 @@ func NewHandlerManagerSet(opts *config.Config) (hms *HandlerManagerSet, err erro
 	var hhits int64 = 0
 	var ihits int64 = 0
 	var misses int64 = 0
+	var lenQueue int64 = 0
+	var memPercent float64 = 0.0
 	hms = &HandlerManagerSet{
 		hmMap:      make(map[string]*HandlerManager),
 		regMgr:     rm,
@@ -117,8 +122,11 @@ func NewHandlerManagerSet(opts *config.Config) (hms *HandlerManagerSet, err erro
 		hhits:      &hhits,
 		ihits:      &ihits,
 		misses:     &misses,
+		MemPercent: &memPercent,
+		LenQueue:   &lenQueue,
 	}
-
+	m := &sync.Mutex{}
+	hms.cond = sync.NewCond(m)
 	hms.lru = NewHandlerLRU(hms, opts.Handler_cache_size) //kb
 
 	return hms, nil
@@ -153,7 +161,7 @@ func (hms *HandlerManagerSet) Get(name string) (h *Handler, err error) {
 			hm:      hm,
 			runners: 1,
 		}
-		
+
 		// we are up so we can add ourselves for reuse
 		if hms.maxRunners == 0 || h.runners < hms.maxRunners {
 			hm.hElements[h] = hm.handlers.PushFront(h)
@@ -283,6 +291,13 @@ func (h *Handler) RunStart() (ch *sb.Channel, err error) {
 
 	// create sandbox if needed
 	if h.sandbox == nil {
+		hms.cond.L.Lock()
+		for hms.LenQueue > 2 || hms.MemPercent > 75{
+			hms.cond.Wait()
+		}
+		hms.LenQueue += 1
+		hms.cond.L.Unlock()
+
 		hit := false
 		log.Printf("Creat sb for lambda: %s, time is \n", h.name)
 		log.Printf(time.Now().Format(time.RFC3339))
@@ -329,6 +344,11 @@ func (h *Handler) RunStart() (ch *sb.Channel, err error) {
 			}
 		}
 
+		hms.cond.L.Lock()
+                hms.LenQueue -= 1
+                hms.cond.L.Unlock()
+		hms.cond.L.Broadcast()
+
 		// use StdoutPipe of olcontainer to sync with lambda server
 		ready := make(chan bool, 1)
 		defer close(ready)
@@ -352,6 +372,7 @@ func (h *Handler) RunStart() (ch *sb.Channel, err error) {
 			ready <- true
 		}()
 
+
 		// wait up to 20s for server to initialize
 		start := time.Now()
 		timeout := time.NewTimer(20 * time.Second)
@@ -365,6 +386,7 @@ func (h *Handler) RunStart() (ch *sb.Channel, err error) {
 		case <-timeout.C:
 			return nil, fmt.Errorf("handler server failed to initialize after 20s")
 		}
+
 
 
 	} else if sbState, _ := h.sandbox.State(); sbState == state.Paused {
@@ -423,6 +445,7 @@ func (h *Handler) RunFinish() {
 }
 
 func (h *Handler) nuke() {
+	hms := h.hm.hms
 	if err := h.sandbox.Unpause(); err != nil {
 		log.Printf("failed to unpause sandbox :: %v", err.Error())
 	}
@@ -431,6 +454,9 @@ func (h *Handler) nuke() {
 	}
 	if err := h.sandbox.Remove(); err != nil {
 		log.Printf("failed to remove sandbox :: %v", err.Error())
+	}
+	if hms.MemPercent <= 75{
+		hms.cond.L.Broadcast()
 	}
 }
 

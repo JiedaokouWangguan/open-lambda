@@ -15,6 +15,7 @@ import (
 	"github.com/open-lambda/open-lambda/worker/benchmarker"
 	"github.com/open-lambda/open-lambda/worker/config"
 	"github.com/open-lambda/open-lambda/worker/handler"
+	"github.com/shirou/gopsutil/mem"
 )
 
 const (
@@ -249,7 +250,14 @@ func Main(config_path string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-
+	go func() {
+		for true{
+			v, _ := mem.VirtualMemory()
+			server.handlers.MemPercent = &v.UsedPercent
+			time.Sleep(1 * time.Second)
+			log.Printf("percent: %f\n", v.UsedPercent)
+		}
+	}()
 	if conf.Benchmark_file != "" {
 		benchmarker.CreateBenchmarkerSingleton(conf.Benchmark_file)
 	}
