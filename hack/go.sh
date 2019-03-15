@@ -8,6 +8,7 @@
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 export GOPATH=${DIR}'/go'
 echo Using GOPATH=$GOPATH
+go get github.com/shirou/gopsutil/mem
 set -e -x
 
 go ${@:1}
