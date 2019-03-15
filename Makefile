@@ -40,15 +40,6 @@ define RUN_TEST=
 		./bin/admin status -cluster=$(TEST_CLUSTER) 1>/dev/null && s=0 && break || s=$$?; \
 	done; ([ $$s -eq 0 ] || (echo "Worker failed to initialize after $(WORKER_TIMEOUT)s" && exit 1))
 	@echo "Worker ready. Requesting lambdas..."
-	$(RUN_LAMBDA)/echo -d '{}'
-	@echo
-	$(RUN_LAMBDA)/install -d '{}'
-	@echo
-	$(RUN_LAMBDA)/install2 -d '{}'
-	@echo
-	$(RUN_LAMBDA)/install3 -d '{}'
-	@echo
-	@echo
 endef
 
 GO = $(abspath ./hack/go.sh)

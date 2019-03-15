@@ -292,7 +292,7 @@ func (h *Handler) RunStart() (ch *sb.Channel, err error) {
 	// create sandbox if needed
 	if h.sandbox == nil {
 		hms.cond.L.Lock()
-		for hms.LenQueue > 2 || hms.MemPercent > 75{
+		for hms.LenQueue >= 1 || hms.MemPercent >= 70{
 			hms.cond.Wait()
 		}
 		hms.LenQueue += 1
@@ -455,7 +455,7 @@ func (h *Handler) nuke() {
 	if err := h.sandbox.Remove(); err != nil {
 		log.Printf("failed to remove sandbox :: %v", err.Error())
 	}
-	if hms.MemPercent <= 75{
+	if hms.MemPercent <= 70{
 		hms.cond.L.Broadcast()
 	}
 }
