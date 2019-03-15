@@ -292,10 +292,10 @@ func (h *Handler) RunStart() (ch *sb.Channel, err error) {
 	// create sandbox if needed
 	if h.sandbox == nil {
 		hms.cond.L.Lock()
-		for hms.LenQueue >= 1 || hms.MemPercent >= 70{
+		for *hms.LenQueue >= 1 || *hms.MemPercent >= 70{
 			hms.cond.Wait()
 		}
-		hms.LenQueue += 1
+		*hms.LenQueue += 1
 		hms.cond.L.Unlock()
 
 		hit := false
@@ -345,9 +345,9 @@ func (h *Handler) RunStart() (ch *sb.Channel, err error) {
 		}
 
 		hms.cond.L.Lock()
-                hms.LenQueue -= 1
+                *hms.LenQueue -= 1
                 hms.cond.L.Unlock()
-		hms.cond.L.Broadcast()
+		hms.cond.Broadcast()
 
 		// use StdoutPipe of olcontainer to sync with lambda server
 		ready := make(chan bool, 1)
@@ -455,8 +455,8 @@ func (h *Handler) nuke() {
 	if err := h.sandbox.Remove(); err != nil {
 		log.Printf("failed to remove sandbox :: %v", err.Error())
 	}
-	if hms.MemPercent <= 70{
-		hms.cond.L.Broadcast()
+	if *hms.MemPercent <= 70{
+		hms.cond.Broadcast()
 	}
 }
 
